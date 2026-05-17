@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8" />
+<title>Parfait Maker · 自由 DIY</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<script src="https://unpkg.com/@tailwindcss/browser@4.0.0-alpha.34/dist/index.global.js"></script>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;500;600&family=Zen+Kaku+Gothic+New:wght@300;400;500&family=Zen+Maru+Gothic:wght@400;500;700&display=swap" rel="stylesheet" />
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          cream:   "#FBF5EC",
+          paper:   "#F4ECDE",
+          milk:    "#FFFCF6",
+          ink:     "#3A2A1F",
+          inkSoft: "#7C6757",
+          peach:   "#E8B79A",
+          rose:    "#D98A86",
+          matcha:  "#A8B47C",
+          honey:   "#D9A55B",
+          choco:   "#6B4A37",
+          berry:   "#9B4A57",
+        },
+        fontFamily: {
+          mincho: ['"Shippori Mincho"', 'serif'],
+          maru:   ['"Zen Maru Gothic"', 'sans-serif'],
+          kaku:   ['"Zen Kaku Gothic New"', 'sans-serif'],
+        },
+      },
+    },
+  };
+</script>
+<style>
+  html, body { background: #FBF5EC; overscroll-behavior: none; }
+  body { font-family: 'Zen Kaku Gothic New', sans-serif; color: #3A2A1F; }
+  .vertical-jp { writing-mode: vertical-rl; text-orientation: mixed; letter-spacing: 0.35em; }
+  .grain::before {
+    content: ""; position: absolute; inset: 0; pointer-events: none;
+    background-image: radial-gradient(rgba(58,42,31,0.06) 1px, transparent 1px);
+    background-size: 3px 3px; mix-blend-mode: multiply; opacity: 0.5;
+  }
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { scrollbar-width: none; }
+  .scroll-fade { mask-image: linear-gradient(to bottom, transparent 0, #000 24px, #000 calc(100% - 24px), transparent 100%); }
+
+  /* Sticker shadow */
+  .sticker {
+    filter:
+      drop-shadow(0 1px 0 rgba(255,255,255,0.9))
+      drop-shadow(0 4px 6px rgba(58,42,31,0.18))
+      drop-shadow(0 1px 1px rgba(58,42,31,0.10));
+  }
+  .sticker svg { display: block; overflow: visible; }
+  .sticker-outline { paint-order: stroke fill; stroke: #FFFDF7; stroke-width: 4; stroke-linejoin: round; stroke-linecap: round; }
+
+  /* Drag state */
+  .grabbing, .grabbing * { cursor: grabbing !important; user-select: none !important; }
+  .placed { touch-action: none; }
+  .picker-card { touch-action: none; }
+
+  /* Glass shine */
+  .glass-shine {
+    background: linear-gradient(105deg,
+      rgba(255,255,255,0) 38%,
+      rgba(255,255,255,0.55) 44%,
+      rgba(255,255,255,0) 50%);
+  }
+
+  /* Slider in the edit panel */
+  .parfait-slider {
+    -webkit-appearance: none; appearance: none;
+    height: 2px; background: rgba(251,245,236,0.35);
+    border-radius: 1px; outline: none; cursor: pointer;
+  }
+  .parfait-slider::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none;
+    width: 12px; height: 12px; border-radius: 50%;
+    background: #FBF5EC; border: 1.5px solid #3A2A1F;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+    cursor: grab;
+  }
+  .parfait-slider::-moz-range-thumb {
+    width: 12px; height: 12px; border-radius: 50%;
+    background: #FBF5EC; border: 1.5px solid #3A2A1F;
+    cursor: grab;
+  }
+
+  /* Canvas card — paper sheet look */
+  .canvas-card {
+    background:
+      radial-gradient(120% 100% at 50% 0%, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0) 60%),
+      #F4ECDE;
+    border: 1px solid rgba(58,42,31,0.18);
+    box-shadow:
+      0 24px 60px -28px rgba(58,42,31,0.45),
+      0 4px 12px rgba(58,42,31,0.08),
+      inset 0 0 0 6px #FBF5EC,
+      inset 0 0 0 7px rgba(58,42,31,0.08);
+  }
+</style>
+</head>
+<body class="min-h-screen">
+<template id="__bundler_thumbnail" data-bg-color="#FBF5EC">
+  <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+    <!-- vertical caption marks (corner ticks) -->
+    <g stroke="#3A2A1F" stroke-width="1" opacity="0.4">
+      <line x1="12" y1="12" x2="22" y2="12"/><line x1="12" y1="12" x2="12" y2="22"/>
+      <line x1="188" y1="12" x2="178" y2="12"/><line x1="188" y1="12" x2="188" y2="22"/>
+      <line x1="12" y1="188" x2="22" y2="188"/><line x1="12" y1="188" x2="12" y2="178"/>
+      <line x1="188" y1="188" x2="178" y2="188"/><line x1="188" y1="188" x2="188" y2="178"/>
+    </g>
+    <!-- wine glass silhouette -->
+    <path d="M72 64 Q 60 110, 80 152 L 120 152 Q 140 110, 128 64 Z"
+          fill="rgba(255,255,255,0.6)" stroke="#3A2A1F" stroke-width="2.5" stroke-linejoin="round"/>
+    <!-- base layers inside -->
+    <path d="M84 142 L116 142 L114 152 L86 152 Z" fill="#5C3A28"/>
+    <path d="M80 128 L120 128 Q 120 134, 110 138 Q 100 134, 90 138 Q 80 134, 80 128 Z" fill="#F2DEB4"/>
+    <path d="M78 114 L122 114 L120 124 L80 124 Z" fill="#ECA3A3"/>
+    <!-- whip cloud -->
+    <path d="M82 80 Q 86 70, 92 76 Q 98 68, 104 76 Q 110 68, 116 76 Q 122 72, 122 84 L 122 92 L 82 92 Z"
+          fill="#FFFCF6" stroke="#3A2A1F" stroke-width="1.5" stroke-linejoin="round"/>
+    <!-- cherry on top -->
+    <circle cx="108" cy="62" r="7" fill="#C8323C" stroke="#3A2A1F" stroke-width="1.5"/>
+    <path d="M108 55 Q 113 42, 122 38" fill="none" stroke="#3A2A1F" stroke-width="1.5" stroke-linecap="round"/>
+    <path d="M120 38 Q 124 36, 128 40 Q 124 42, 120 38 Z" fill="#74A35C" stroke="#3A2A1F" stroke-width="1"/>
+    <!-- stem & foot -->
+    <line x1="100" y1="152" x2="100" y2="178" stroke="#3A2A1F" stroke-width="2.5" stroke-linecap="round"/>
+    <line x1="82" y1="180" x2="118" y2="180" stroke="#3A2A1F" stroke-width="2.5" stroke-linecap="round"/>
+    <!-- minimal title -->
+    <text x="100" y="200" text-anchor="middle"
+          font-family="serif" font-size="9" letter-spacing="3" fill="#7C6757">PARFAIT</text>
+  </svg>
+</template>
+<div id="root"></div>
+
+<script type="text/babel" data-presets="env,react" src="stickers.jsx"></script>
+<script type="text/babel" data-presets="env,react" src="cups.jsx"></script>
+<script type="text/babel" data-presets="env,react" src="app.jsx"></script>
+</body>
+</html>

@@ -1,0 +1,513 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8" />
+<title>Parfait DIY · 芭菲独立制作</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;500;600&family=Zen+Kaku+Gothic+New:wght@300;400;500&family=Zen+Maru+Gothic:wght@400;500;700&display=swap" rel="stylesheet" />
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          cream:   "#FBF5EC",
+          paper:   "#F4ECDE",
+          milk:    "#FFFCF6",
+          ink:     "#3A2A1F",
+          inkSoft: "#7C6757",
+          peach:   "#E8B79A",
+          rose:    "#D98A86",
+          matcha:  "#A8B47C",
+          honey:   "#D9A55B",
+          choco:   "#6B4A37",
+          berry:   "#9B4A57",
+        },
+        fontFamily: {
+          mincho: ['"Shippori Mincho"', 'serif'],
+          maru:   ['"Zen Maru Gothic"', 'sans-serif'],
+          kaku:   ['"Zen Kaku Gothic New"', 'sans-serif'],
+        },
+      },
+    },
+  };
+</script>
+<style>
+  html, body { background: #FBF5EC; }
+  body { font-family: 'Zen Kaku Gothic New', sans-serif; color: #3A2A1F; }
+  .vertical-jp {
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+    letter-spacing: 0.35em;
+  }
+  /* subtle grain */
+  .grain::before {
+    content: "";
+    position: absolute; inset: 0;
+    pointer-events: none;
+    background-image: radial-gradient(rgba(58,42,31,0.06) 1px, transparent 1px);
+    background-size: 3px 3px;
+    mix-blend-mode: multiply;
+    opacity: 0.5;
+  }
+  /* glass highlights */
+  .glass-shine {
+    background: linear-gradient(105deg,
+      rgba(255,255,255,0) 40%,
+      rgba(255,255,255,0.55) 46%,
+      rgba(255,255,255,0) 52%);
+  }
+  .glass-edge {
+    background: linear-gradient(90deg,
+      rgba(58,42,31,0.12) 0%,
+      rgba(58,42,31,0)   12%,
+      rgba(58,42,31,0)   88%,
+      rgba(58,42,31,0.12) 100%);
+  }
+  .scroll-fade {
+    mask-image: linear-gradient(to bottom, transparent 0, #000 24px, #000 calc(100% - 24px), transparent 100%);
+  }
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { scrollbar-width: none; }
+</style>
+</head>
+<body class="min-h-screen">
+<div id="root"></div>
+
+<script type="text/babel" data-presets="env,react">
+const { useState, useMemo } = React;
+
+/* ---------- Ingredient catalog ---------- */
+const CATEGORIES = [
+  { id: "base",   jp: "ベース",  zh: "基底" },
+  { id: "fruit",  jp: "フルーツ", zh: "水果" },
+  { id: "sauce",  jp: "ソース",  zh: "酱汁" },
+  { id: "top",    jp: "トッピング", zh: "顶饰" },
+];
+
+const INGREDIENTS = [
+  // base
+  { id: "vanilla",  cat: "base",  jp: "バニラ",     zh: "香草冰淇淋", color: "#F5E7C9", texture: "scoop" },
+  { id: "matcha",   cat: "base",  jp: "抹茶",       zh: "抹茶冰淇淋", color: "#A8B47C", texture: "scoop" },
+  { id: "yogurt",   cat: "base",  jp: "ヨーグルト", zh: "酸奶",       color: "#FFFCF6", texture: "cream" },
+  { id: "granola",  cat: "base",  jp: "グラノラ",   zh: "燕麦脆",     color: "#C49765", texture: "crumb" },
+  { id: "sponge",   cat: "base",  jp: "スポンジ",   zh: "海绵蛋糕",   color: "#EBCB97", texture: "block" },
+
+  // fruit
+  { id: "strawberry", cat: "fruit", jp: "苺",       zh: "草莓",     color: "#D98A86", texture: "dot" },
+  { id: "blueberry",  cat: "fruit", jp: "ブルーベリー", zh: "蓝莓", color: "#5A4B82", texture: "dot" },
+  { id: "peach",      cat: "fruit", jp: "白桃",     zh: "白桃",     color: "#F2C2A6", texture: "dot" },
+  { id: "banana",     cat: "fruit", jp: "バナナ",   zh: "香蕉",     color: "#F1D87A", texture: "slice" },
+  { id: "kiwi",       cat: "fruit", jp: "キウイ",   zh: "猕猴桃",   color: "#9DBF6B", texture: "slice" },
+
+  // sauce
+  { id: "chocolate",  cat: "sauce", jp: "ショコラ", zh: "巧克力酱", color: "#6B4A37", texture: "drizzle" },
+  { id: "caramel",    cat: "sauce", jp: "キャラメル", zh: "焦糖酱", color: "#B07A3B", texture: "drizzle" },
+  { id: "berry",      cat: "sauce", jp: "ベリー",   zh: "莓果酱",   color: "#9B4A57", texture: "drizzle" },
+  { id: "honey",      cat: "sauce", jp: "蜂蜜",     zh: "蜂蜜",     color: "#D9A55B", texture: "drizzle" },
+
+  // top
+  { id: "whip",       cat: "top",   jp: "ホイップ", zh: "鲜奶油",   color: "#FFFCF6", texture: "cream" },
+  { id: "mint",       cat: "top",   jp: "ミント",   zh: "薄荷叶",   color: "#7FA46B", texture: "leaf" },
+  { id: "almond",     cat: "top",   jp: "アーモンド", zh: "杏仁片", color: "#D6B98A", texture: "crumb" },
+  { id: "cherry",     cat: "top",   jp: "さくらんぼ", zh: "樱桃",   color: "#B33A3F", texture: "cherry" },
+  { id: "wafer",      cat: "top",   jp: "ウエハース", zh: "威化卷", color: "#E3C28A", texture: "wafer" },
+];
+
+const findIng = (id) => INGREDIENTS.find(i => i.id === id);
+
+/* ---------- Glass / Layer rendering ---------- */
+function Layer({ ing, index, total }) {
+  // bottom layer index 0, top is last
+  // glass body height region: we'll just render fixed-height bands stacked
+  const h = 34; // px per layer
+  return (
+    <div
+      className="relative w-full overflow-hidden"
+      style={{ height: h }}
+    >
+      <div
+        className="absolute inset-0"
+        style={{ background: ing.color, opacity: 0.92 }}
+      />
+      {/* texture overlays */}
+      {ing.texture === "crumb" && (
+        <div className="absolute inset-0" style={{
+          backgroundImage:
+            `radial-gradient(${shade(ing.color,-18)} 1.5px, transparent 2px),
+             radial-gradient(${shade(ing.color, 14)} 1px, transparent 1.5px)`,
+          backgroundSize: "8px 8px, 6px 6px",
+          backgroundPosition: "0 0, 3px 4px",
+          opacity: 0.85,
+        }} />
+      )}
+      {ing.texture === "dot" && (
+        <div className="absolute inset-0" style={{
+          backgroundImage:
+            `radial-gradient(${shade(ing.color,-12)} 3px, transparent 3.5px)`,
+          backgroundSize: "14px 14px",
+          opacity: 0.9,
+        }} />
+      )}
+      {ing.texture === "drizzle" && (
+        <div className="absolute inset-x-0 -top-2 h-6" style={{
+          background: `radial-gradient(8px 12px at 20% 60%, ${ing.color} 60%, transparent 62%),
+                       radial-gradient(6px 10px at 55% 30%, ${ing.color} 60%, transparent 62%),
+                       radial-gradient(10px 14px at 82% 70%, ${ing.color} 60%, transparent 62%)`,
+        }} />
+      )}
+      {ing.texture === "cream" && (
+        <div className="absolute inset-x-0 -top-3 h-6" style={{
+          background: `radial-gradient(14px 10px at 18% 70%, ${ing.color} 70%, transparent 72%),
+                       radial-gradient(16px 11px at 50% 50%, ${ing.color} 70%, transparent 72%),
+                       radial-gradient(14px 10px at 82% 75%, ${ing.color} 70%, transparent 72%)`,
+        }} />
+      )}
+      {ing.texture === "slice" && (
+        <div className="absolute inset-0 flex items-center justify-around px-1">
+          {[0,1,2].map(i => (
+            <div key={i} className="rounded-full"
+              style={{ width: 18, height: 8, background: shade(ing.color,-10), opacity:.85 }} />
+          ))}
+        </div>
+      )}
+      {ing.texture === "scoop" && (
+        <div className="absolute inset-x-2 -top-2 h-8 rounded-full"
+          style={{ background: shade(ing.color, 6), boxShadow: `inset 0 -4px 0 ${shade(ing.color,-10)}` }} />
+      )}
+      {ing.texture === "block" && (
+        <div className="absolute inset-0" style={{
+          backgroundImage:
+            `linear-gradient(90deg, ${shade(ing.color,-8)} 1px, transparent 1px),
+             linear-gradient(0deg,  ${shade(ing.color,-10)} 1px, transparent 1px)`,
+          backgroundSize: "10px 10px",
+          opacity: 0.45,
+        }} />
+      )}
+      {ing.texture === "leaf" && (
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="rounded-full" style={{ width: 18, height: 10, background: ing.color, transform:"rotate(-20deg)" }} />
+        </div>
+      )}
+      {ing.texture === "cherry" && (
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="rounded-full" style={{ width: 16, height: 16, background: ing.color, boxShadow:"inset -3px -3px 0 rgba(0,0,0,0.18)" }} />
+        </div>
+      )}
+      {ing.texture === "wafer" && (
+        <div className="absolute inset-0 flex items-center justify-center gap-1">
+          <div className="rotate-12" style={{ width: 6, height: 22, background: ing.color, borderLeft:`1px solid ${shade(ing.color,-15)}` }} />
+        </div>
+      )}
+
+      {/* faint divider between layers */}
+      <div className="absolute inset-x-0 top-0 h-px" style={{ background: "rgba(58,42,31,0.12)" }} />
+    </div>
+  );
+}
+
+function shade(hex, percent) {
+  const c = hex.replace("#","");
+  const n = parseInt(c,16);
+  let r = (n>>16) + percent;
+  let g = ((n>>8)&0xff) + percent;
+  let b = (n&0xff) + percent;
+  r = Math.max(0,Math.min(255,r));
+  g = Math.max(0,Math.min(255,g));
+  b = Math.max(0,Math.min(255,b));
+  return "#" + ((r<<16)|(g<<8)|b).toString(16).padStart(6,"0");
+}
+
+function ParfaitGlass({ layers, onRemoveTop, onClear }) {
+  const stack = layers.map(findIng);
+  const empty = stack.length === 0;
+
+  return (
+    <div className="relative w-full h-full flex flex-col items-center justify-end pb-10 px-6">
+      {/* Top label */}
+      <div className="absolute top-8 left-8 right-8 flex items-start justify-between">
+        <div>
+          <div className="font-mincho text-[11px] tracking-[0.4em] text-inkSoft">N° 01</div>
+          <div className="font-mincho text-3xl mt-2 leading-none">あなたの一杯</div>
+          <div className="text-[11px] tracking-[0.3em] text-inkSoft mt-2 uppercase">Your Parfait</div>
+        </div>
+        <div className="text-right">
+          <div className="text-[10px] tracking-[0.3em] text-inkSoft uppercase">Layers</div>
+          <div className="font-mincho text-4xl leading-none mt-1">{String(stack.length).padStart(2,"0")}</div>
+        </div>
+      </div>
+
+      {/* Glass */}
+      <div className="relative" style={{ width: 220, height: 420 }}>
+        {/* Cup body — tapered */}
+        <div
+          className="absolute left-1/2 -translate-x-1/2"
+          style={{
+            top: 30,
+            width: 200,
+            height: 280,
+            clipPath: "polygon(8% 0, 92% 0, 78% 100%, 22% 100%)",
+            background:
+              "linear-gradient(180deg, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0.25) 40%, rgba(255,255,255,0.35) 100%)",
+            border: "0",
+            boxShadow: "inset 0 0 0 1.5px rgba(58,42,31,0.35)",
+          }}
+        >
+          {/* inner content area (layers stack from bottom) */}
+          <div className="absolute inset-x-3 inset-y-2 flex flex-col-reverse overflow-hidden">
+            {stack.map((ing, i) => (
+              <Layer key={i + "-" + ing.id} ing={ing} index={i} total={stack.length} />
+            ))}
+            {empty && (
+              <div className="m-auto text-center">
+                <div className="font-mincho text-inkSoft text-sm tracking-[0.3em]">空</div>
+                <div className="text-[10px] text-inkSoft/70 mt-2 tracking-[0.3em]">EMPTY</div>
+              </div>
+            )}
+          </div>
+
+          {/* shine */}
+          <div className="absolute inset-0 glass-shine pointer-events-none" />
+          <div className="absolute inset-0 glass-edge pointer-events-none" />
+        </div>
+
+        {/* Glass rim (ellipse) */}
+        <div
+          className="absolute left-1/2 -translate-x-1/2"
+          style={{
+            top: 22,
+            width: 184,
+            height: 22,
+            borderRadius: "50%",
+            border: "1.5px solid rgba(58,42,31,0.4)",
+            background: "linear-gradient(180deg, rgba(255,255,255,0.7), rgba(255,255,255,0.15))",
+          }}
+        />
+        {/* Stem */}
+        <div
+          className="absolute left-1/2 -translate-x-1/2"
+          style={{
+            top: 305,
+            width: 14,
+            height: 70,
+            background:
+              "linear-gradient(90deg, rgba(58,42,31,0.18), rgba(255,255,255,0.5) 40%, rgba(58,42,31,0.18))",
+            boxShadow: "inset 0 0 0 0.5px rgba(58,42,31,0.25)",
+          }}
+        />
+        {/* Foot */}
+        <div
+          className="absolute left-1/2 -translate-x-1/2"
+          style={{
+            top: 372,
+            width: 130,
+            height: 14,
+            borderRadius: "50%",
+            background:
+              "radial-gradient(ellipse at 50% 30%, rgba(255,255,255,0.85), rgba(255,255,255,0.2) 60%, rgba(58,42,31,0.15))",
+            boxShadow: "inset 0 0 0 1px rgba(58,42,31,0.3)",
+          }}
+        />
+        {/* Foot shadow */}
+        <div
+          className="absolute left-1/2 -translate-x-1/2"
+          style={{
+            top: 390,
+            width: 150,
+            height: 10,
+            borderRadius: "50%",
+            background: "radial-gradient(ellipse, rgba(58,42,31,0.18), transparent 70%)",
+          }}
+        />
+
+        {/* Long spoon */}
+        {!empty && (
+          <div className="absolute" style={{ top: -6, left: 168, transform: "rotate(14deg)", transformOrigin:"top left" }}>
+            <div style={{ width: 8, height: 280, background: "linear-gradient(180deg,#E8DDC8,#CFC0A4)", borderRadius: 4, boxShadow:"inset -1px 0 0 rgba(58,42,31,0.2)" }} />
+            <div className="absolute -top-3 -left-2" style={{ width: 24, height: 30, borderRadius: "50% 50% 45% 45%", background: "linear-gradient(180deg,#F0E6D2,#D8C9A8)", boxShadow:"inset 0 -2px 0 rgba(58,42,31,0.18)" }} />
+          </div>
+        )}
+      </div>
+
+      {/* Controls */}
+      <div className="mt-6 flex items-center gap-3">
+        <button
+          onClick={onRemoveTop}
+          disabled={empty}
+          className="text-[11px] tracking-[0.3em] uppercase px-4 py-2 border border-ink/30 text-ink hover:bg-ink hover:text-cream transition disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-ink"
+        >
+          一つ戻す · Undo
+        </button>
+        <button
+          onClick={onClear}
+          disabled={empty}
+          className="text-[11px] tracking-[0.3em] uppercase px-4 py-2 text-inkSoft hover:text-ink transition disabled:opacity-30"
+        >
+          全部消す · Clear
+        </button>
+      </div>
+
+      {/* Side vertical text */}
+      <div className="absolute left-4 top-1/2 -translate-y-1/2 vertical-jp font-mincho text-[10px] text-inkSoft">
+        季節の素材を、好きな順に重ねて。
+      </div>
+    </div>
+  );
+}
+
+/* ---------- Ingredient picker ---------- */
+function IngredientCard({ ing, onAdd }) {
+  return (
+    <button
+      onClick={() => onAdd(ing.id)}
+      className="group relative bg-milk border border-ink/10 hover:border-ink/40 transition rounded-sm p-4 text-left flex flex-col gap-3 hover:-translate-y-0.5 hover:shadow-[0_8px_24px_-12px_rgba(58,42,31,0.35)]"
+    >
+      {/* swatch */}
+      <div className="relative w-full aspect-[4/3] rounded-sm overflow-hidden bg-paper">
+        <div className="absolute inset-0" style={{ background: ing.color, opacity: 0.92 }} />
+        <Layer ing={ing} index={0} total={1} />
+        <div className="absolute inset-0 ring-1 ring-inset ring-ink/10" />
+        {/* index */}
+        <div className="absolute top-1.5 left-1.5 text-[9px] tracking-[0.2em] font-mincho px-1.5 py-0.5 bg-cream/80 text-inkSoft">
+          {ing.id.slice(0,2).toUpperCase()}
+        </div>
+      </div>
+      <div className="flex items-end justify-between">
+        <div>
+          <div className="font-mincho text-base leading-tight">{ing.jp}</div>
+          <div className="text-[11px] text-inkSoft mt-0.5">{ing.zh}</div>
+        </div>
+        <div className="w-7 h-7 rounded-full border border-ink/30 flex items-center justify-center text-ink/60 group-hover:bg-ink group-hover:text-cream group-hover:border-ink transition">
+          <svg width="11" height="11" viewBox="0 0 12 12"><path d="M6 1v10M1 6h10" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></svg>
+        </div>
+      </div>
+    </button>
+  );
+}
+
+function IngredientPanel({ onAdd }) {
+  const [active, setActive] = useState("base");
+  const items = useMemo(() => INGREDIENTS.filter(i => i.cat === active), [active]);
+
+  return (
+    <div className="h-full flex flex-col">
+      {/* Header */}
+      <div className="flex items-end justify-between mb-6">
+        <div>
+          <div className="text-[11px] tracking-[0.4em] text-inkSoft uppercase">Step 02 — 素材を選ぶ</div>
+          <h2 className="font-mincho text-3xl mt-2">食材の棚</h2>
+          <div className="text-xs text-inkSoft mt-1">轻轻一点，便落入杯中</div>
+        </div>
+        <div className="font-mincho text-[10px] tracking-[0.4em] text-inkSoft">
+          ITEMS / {INGREDIENTS.length.toString().padStart(2,"0")}
+        </div>
+      </div>
+
+      {/* Tabs */}
+      <div className="flex items-center gap-1 border-b border-ink/15 mb-6">
+        {CATEGORIES.map(c => {
+          const on = c.id === active;
+          return (
+            <button key={c.id}
+              onClick={() => setActive(c.id)}
+              className={"relative px-4 py-3 text-left transition " + (on ? "text-ink" : "text-inkSoft hover:text-ink")}>
+              <div className="font-mincho text-base">{c.jp}</div>
+              <div className="text-[10px] tracking-[0.3em] mt-0.5 uppercase">{c.zh}</div>
+              {on && <div className="absolute left-0 right-0 -bottom-px h-px bg-ink" />}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Grid */}
+      <div className="flex-1 overflow-y-auto no-scrollbar scroll-fade pr-2">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 pb-6">
+          {items.map(ing => (
+            <IngredientCard key={ing.id} ing={ing} onAdd={onAdd} />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ---------- App shell ---------- */
+function App() {
+  const [layers, setLayers] = useState([]); // ids, bottom-first
+
+  const addLayer = (id) => setLayers(prev => [...prev, id]);
+  const removeTop = () => setLayers(prev => prev.slice(0, -1));
+  const clear = () => setLayers([]);
+
+  return (
+    <div className="min-h-screen relative">
+      {/* Top bar */}
+      <header className="px-10 pt-8 pb-4 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="w-7 h-7 rounded-full border border-ink flex items-center justify-center font-mincho text-sm">P</div>
+          <div className="font-mincho tracking-[0.3em] text-sm">PARFAIT &nbsp;·&nbsp; パフェ</div>
+        </div>
+        <nav className="hidden md:flex items-center gap-8 text-[11px] tracking-[0.3em] uppercase text-inkSoft">
+          <a className="hover:text-ink">Studio</a>
+          <a className="hover:text-ink">Recipes</a>
+          <a className="hover:text-ink">Journal</a>
+          <a className="hover:text-ink">About</a>
+        </nav>
+        <div className="text-[11px] tracking-[0.3em] text-inkSoft">
+          初夏 · MAY
+        </div>
+      </header>
+
+      {/* Hairline */}
+      <div className="mx-10 border-t border-ink/15"></div>
+
+      {/* Main: 40 / 60 split */}
+      <main className="grid grid-cols-1 lg:grid-cols-[2fr_3fr] gap-0 px-10 pt-8 pb-12 min-h-[calc(100vh-110px)]">
+        {/* Left — Parfait stage (40%) */}
+        <section className="relative bg-paper grain overflow-hidden">
+          <ParfaitGlass layers={layers} onRemoveTop={removeTop} onClear={clear} />
+          {/* corner marks */}
+          <CornerMarks />
+        </section>
+
+        {/* Right — Ingredients (60%) */}
+        <section className="bg-cream pl-10 pr-2 py-10">
+          <IngredientPanel onAdd={addLayer} />
+        </section>
+      </main>
+
+      {/* Footer */}
+      <footer className="px-10 pb-8 flex items-center justify-between text-[11px] tracking-[0.3em] text-inkSoft uppercase">
+        <div>© Parfait Studio &nbsp; / &nbsp; Hand-built in Kyoto</div>
+        <div>v 0.1 · prototype</div>
+      </footer>
+    </div>
+  );
+}
+
+function CornerMarks() {
+  const arm = "absolute w-4 h-px bg-ink/40";
+  const armV = "absolute w-px h-4 bg-ink/40";
+  return (
+    <>
+      <div className={arm}  style={{ top: 16, left: 16 }} />
+      <div className={armV} style={{ top: 16, left: 16 }} />
+      <div className={arm}  style={{ top: 16, right: 16 }} />
+      <div className={armV} style={{ top: 16, right: 16 }} />
+      <div className={arm}  style={{ bottom: 16, left: 16 }} />
+      <div className={armV} style={{ bottom: 16, left: 16, marginTop: -16 }} />
+      <div className={arm}  style={{ bottom: 16, right: 16 }} />
+      <div className={armV} style={{ bottom: 16, right: 16, marginTop: -16 }} />
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>
